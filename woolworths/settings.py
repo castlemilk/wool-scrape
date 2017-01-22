@@ -9,11 +9,13 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
+MONGO_URI = 'mongodb://127.0.0.1:27017'
+MONGO_DB = "woolworths"
+
 BOT_NAME = 'woolworths'
 
 SPIDER_MODULES = ['woolworths.spiders']
 NEWSPIDER_MODULE = 'woolworths.spiders'
-
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'woolworths (+http://www.yourdomain.com)'
@@ -64,9 +66,7 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'woolworths.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {'woolworths.pipelines.WoolworthsPipeline': 300, }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
