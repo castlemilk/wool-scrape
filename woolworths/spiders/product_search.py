@@ -100,9 +100,6 @@ class ProductSearchSpider(scrapy.Spider):
             self.logger.info("CATEGORY:TITLE:%s", category_item['title'])
             self.logger.info("CATEGORY:URL:%s", category_item['url'])
             if category_item.get('url'):
-                if self.count > 1:
-                    break
-                self.count += 1
                 yield scrapy.Request(
                     category_item['url'],
                     meta={
@@ -132,6 +129,7 @@ class ProductSearchSpider(scrapy.Spider):
                 yield scrapy.Request(
                     sub_category['url'],
                     meta={
+                        'url': sub_category['url'],
                         'category': category,
                         'sub_category': sub_category
                     },
@@ -146,10 +144,11 @@ class ProductSearchSpider(scrapy.Spider):
         self.driver.get(response.url)
         category = response.meta['category']
         sub_category = response.meta['sub_category']
+        page_url = response.meta['url']
         response = TextResponse(
             url=response.url, body=self.driver.page_source, encoding='utf-8')
-        from scrapy.shell import inspect_response
-        inspect_response(response, self)
+        # from scrapy.shell import inspect_response
+        # inspect_response(response, self)
         pages = response.xpath(
             '//div[@class="paging _pagingControl"]//a[contains(@class, "page")]'
         )
@@ -162,10 +161,8 @@ class ProductSearchSpider(scrapy.Spider):
                 # cleaner way to then smoothly transition to the next pages
                 page_number = "1"
                 page_url = response.url
-                page_number = re.search('.*\=([0-9]+)', page_url).groups()[0]
-                self.logger.info("SUB_SUB_CATEGORY:PAGE(active):%s",
-                                 page_number)
-                self.logger.info("SUB_SUB_CATEGORY:URL:%s", page_url)
+                self.logger.info("SUB_CATEGORY:PAGE(active):%s", page_number)
+                self.logger.info("SUB_CATEGORY:URL:%s", page_url)
 
                 items = response.xpath('//wow-card[@card="card"]')
                 self.logger.info("ITEMS_PAGE:CATEGORY:%s", ':' \
@@ -197,29 +194,30 @@ class ProductSearchSpider(scrapy.Spider):
                     if url:
                         item['url'] = url[0]
                     if name:
-                        item['name'] = name[0]
+                        item['name'] = name[0].strip()
                     if price_amount:
-                        item['price_amount'] = price_amount[0]
+                        item['price_amount'] = price_amount[0].strip()
                     if price_cup:
-                        item['price_cup'] = price_cub[0]
+                        item['price_cup'] = price_cup[0].strip()
                     if size:
-                        item['size'] = size[0]
-                    item['category'] = category['title']
-                    item['sub_category'] = sub_category['title']
+                        item['size'] = size[0].strip()
+                    item['category'] = category['title'].strip()
+                    item['sub_category'] = sub_category['title'].strip()
                     yield item
 
             else:
-                page_number = re.search('.*\=([0-9]+)', page_url).groups()[0]
-                page_url = "{}{}".format(self.domain, page_select_url[0])
-                self.logger.info("SUB_SUB_CATEGORY:PAGE:%s", page_number)
-                self.logger.info("SUB_SUB_CATEGORY:URL:%s", page_url)
+
+                next_page_url = "{}{}".format(page_url, page_select_url[0])
+                page_number = re.search('.*\=([0-9]+)',
+                                        next_page_url).groups()[0]
+                self.logger.info("SUB_CATEGORY:PAGE:%s", page_number)
+                self.logger.info("SUB_CATEGORY:URL:%s", next_page_url)
                 yield scrapy.Request(
-                    page_url,
+                    next_page_url,
                     meta={
                         'page': page_number,
                         'category': category,
                         'sub_category': sub_category,
-                        'sub_sub_category': sub_sub_category,
                     },
                     callback=self.parse_items_page)
 
@@ -232,7 +230,6 @@ class ProductSearchSpider(scrapy.Spider):
             'page') else "1"
         category = response.meta['category']
         sub_category = response.meta['sub_category']
-        sub_sub_category = response.meta['sub_sub_category']
 
         self.driver.get(response.url)
         response = TextResponse(
@@ -241,8 +238,7 @@ class ProductSearchSpider(scrapy.Spider):
         items = response.xpath('//wow-card[@card="card"]')
         self.logger.info("ITEMS_PAGE:CATEGORY:%s", ':' \
             .join([category['title'],
-            sub_category['title'],
-            sub_sub_category['title']]
+            sub_category['title']]
         ))
         self.logger.info("ITEMS_PAGE:PAGE_NUMBER:%s", page_number)
         self.logger.info("ITEMS_PAGE:PAGE_URL:%s", response.url)
@@ -268,13 +264,13 @@ class ProductSearchSpider(scrapy.Spider):
             if url:
                 item['url'] = url[0]
             if name:
-                item['name'] = name[0]
+                item['name'] = name[0].strip()
             if price_amount:
-                item['price_amount'] = price_amount[0]
+                item['price_amount'] = price_amount[0].strip()
             if price_cup:
-                item['price_cup'] = price_cub[0]
+                item['price_cup'] = price_cup[0].strip()
             if size:
-                item['size'] = size[0]
-            item['category'] = category['title']
-            item['sub_category'] = sub_category['title']
+                item['size'] = size[0].strip()
+            item['category'] = category['title'].strip()
+            item['sub_category'] = sub_category['title'].strip()
             yield item
